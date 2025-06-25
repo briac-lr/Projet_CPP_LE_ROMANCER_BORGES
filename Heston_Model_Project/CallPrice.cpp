@@ -1,39 +1,54 @@
 #include "CallPrice.h"
-
 #include <complex>
 #include <cmath>
-#include <functional>
-#include <numbers>
 
-const double pi = std::numbers::pi;
-
-HestonPricer::HestonPricer(HestonModel model_) : model(model_) 
+HestonPricer::HestonPricer(const HestonModel& heston_model)
+    : _heston_model(heston_model)
 {
 }
 
-double HestonPricer::calculatePrice(double S0, double K, double T) {
-    auto integrand = [&](double omega, bool P1) {
-        std::complex<double> j(0.0, 1.0);
-        std::complex<double> f = model.characteristicFunction(omega, T, std::log(S0), P1);
-        std::complex<double> numerator = f * std::exp(-j * omega * std::log(K));
-        std::complex<double> denominator = j * omega;
-        return std::real(numerator / denominator);
-        };
-
-    auto simpson_integral = [&](bool P1) {
-        const int N = 1000;
-        double a = 1e-6, b = 100.0;
-        double h = (b - a) / N;
-        double sum = integrand(a, P1) + integrand(b, P1);
-        for (int i = 1; i < N; i += 2)
-            sum += 4 * integrand(a + i * h, P1);
-        for (int i = 2; i < N; i += 2)
-            sum += 2 * integrand(a + i * h, P1);
-        return 0.5 + h / 3.0 / pi * sum;
-        };
-
-    double P1 = simpson_integral(true);
-    double P2 = simpson_integral(false);
-    return S0 * P1 - K * std::exp(-model.r * T) * P2;
+HestonPricer::HestonPricer(const HestonPricer& heston_pricer)
+    : _heston_model(heston_pricer._heston_model)
+{
 }
 
+HestonPricer& HestonPricer::operator=(const HestonPricer& heston_pricer)
+{
+    if (this != &heston_pricer)
+    {
+        _heston_model = heston_pricer._heston_model;
+    }
+    return *this;
+}
+
+
+
+// Characteristic function 
+std::complex<double> HestonPricer::CharacteristicFunction(
+    double omega, double T, double time, double x, bool P1) {
+
+    std::complex<double> j(0.0, 1.0);
+    double u_i;
+    std::complex<double> y_i;
+
+    if (P1 == true) {
+        u_i = -1;
+        y_i = j * omega - 1.0;
+    }
+    else {
+        u_i = 1;
+        y_i = j * omega;
+    }
+
+    std::complex<double> a = _heston_model._kappa - _heston_model._rho * _heston_model._sigma* y_i;
+    std::complex<double> b = std::sqrt(a * a + _heston_model._sigma * _heston_model._sigma * (u_i * j * omega + omega * omega));
+    std::complex<double> g = (a - b) / (a + b);
+
+    std::complex<double> num = _heston_model._r * j * omega * (T - time) + _heston_model._kappa * _heston_model._theta;
+    std::complex<double> denom = (_heston_model._sigma * _heston_model._sigma) * ((a - b) * (T - time) - 2.0 * std::log((1.0 - g * std::exp(-b * (T - time))) / (1.0 - g)));
+    std::complex<double> C = num / denom;
+
+    std::complex<double> D = (a - b) / (_heston_model._sigma * _heston_model._sigma) * (1.0 - std::exp(b * (T - time)) / (1.0 - g * std::exp(b * (T - time))));
+
+    return std::exp(C + D * _heston_model._v0 + j * omega * x);
+}

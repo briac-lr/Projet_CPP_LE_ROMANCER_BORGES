@@ -1,0 +1,66 @@
+# --- Fichiers générés par Visual Studio ---
+.vs/
+Heston_Model_Project/.vs/
+Heston_Model_Project/*.sln
+Heston_Model_Project/*.suo
+Heston_Model_Project/*.vcxproj*
+Heston_Model_Project/*.user
+Heston_Model_Project/*.userosscache
+Heston_Model_Project/*.sdf
+Heston_Model_Project/*.opensdf
+Heston_Model_Project/*.ipch
+Heston_Model_Project/*.tlog
+Heston_Model_Project/*.lastbuildstate
+
+# --- Fichiers générés par CMake ---
+Heston_Model_Project/CMakeCache.txt
+Heston_Model_Project/CMakeFiles/
+Heston_Model_Project/cmake_install.cmake
+Heston_Model_Project/Makefile
+Heston_Model_Project/*.ninja
+Heston_Model_Project/.ninja_deps
+Heston_Model_Project/.ninja_log
+Heston_Model_Project/compile_commands.json
+
+# --- Répertoires de build ---
+Heston_Model_Project/build/
+Heston_Model_Project/out/
+
+# --- Dossiers binaires / output ---
+Heston_Model_Project/bin/
+Heston_Model_Project/Debug/
+Heston_Model_Project/Release/
+Heston_Model_Project/x64/
+Heston_Model_Project/x86/
+
+# --- Fichiers objets et binaires ---
+Heston_Model_Project/*.o
+Heston_Model_Project/*.obj
+Heston_Model_Project/*.a
+Heston_Model_Project/*.lib
+Heston_Model_Project/*.exp
+Heston_Model_Project/*.dll
+Heston_Model_Project/*.exe
+Heston_Model_Project/*.pdb
+Heston_Model_Project/*.ilk
+
+# --- Fichiers temporaires / système ---
+Heston_Model_Project/*.tmp
+Heston_Model_Project/*.bak
+Heston_Model_Project/*.swp
+Heston_Model_Project/Thumbs.db
+Heston_Model_Project/.DS_Store
+Heston_Model_Project/ehthumbs.db
+Heston_Model_Project/desktop.ini
+
+# --- IDEs ---
+Heston_Model_Project/.idea/
+Heston_Model_Project/.vscode/
+.idea/
+.vscode/
+
+# --- Raccourcis Windows / OneDrive ---
+Heston_Model_Project/*.lnk
+
+# --- Fichiers de test temporaires ---
+Heston_Model_Project/Testing/

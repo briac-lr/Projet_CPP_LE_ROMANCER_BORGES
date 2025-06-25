@@ -1,16 +1,20 @@
-#ifndef CALLPRICE_H
-#define CALLPRICE_H
+#pragma once
 
-#include "HestonModel.h"
+#include "Model.h"
+
+#include <complex>
+#include <boost/math/quadrature/gauss.hpp>
 
 class HestonPricer {
 public:
-    HestonModel model;
+    HestonPricer(const HestonModel&  heston_model);
+	HestonPricer(const HestonPricer& heston_pricer);
+	HestonPricer& operator=(const HestonPricer& heston_pricer);
+	~HestonPricer() = default;
 
-    HestonPricer(HestonModel model);
+	// Compute Characteristic Function PHI_i
+	std::complex<double> CharacteristicFunction(double omega, double T, double time, double x, bool P1);
 
-    double calculatePrice(double S0, double K, double T);
+private:
+	HestonModel _heston_model;
 };
-
-
-#endif
