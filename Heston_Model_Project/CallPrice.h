@@ -14,7 +14,8 @@ public:
 
 	// Compute Characteristic Function PHI_i
 	std::complex<double> CharacteristicFunction(double omega, double T, double time, double x, bool P1);
-
+	double RealIntegrand(double u, double T, double time, double S0, double K, bool P1);
+	double P_i(double T, double time, double S0, double K, bool P1);
 private:
 	HestonModel _heston_model;
 };

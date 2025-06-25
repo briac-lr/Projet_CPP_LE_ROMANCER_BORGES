@@ -21,6 +21,7 @@ Heston_Model_Project/*.ninja
 Heston_Model_Project/.ninja_deps
 Heston_Model_Project/.ninja_log
 Heston_Model_Project/compile_commands.json
+Heston_Model_Project/CMakeSettings.json
 
 # --- Répertoires de build ---
 Heston_Model_Project/build/
