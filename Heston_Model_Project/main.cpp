@@ -27,8 +27,8 @@ int main() {
     std::cout << "RealIntegrand(" << omega << ") = " << integrand_value << std::endl;
 
     // Tester ComputeP (l'intégrale sur [-1, 1])
-    double P1 = pricer.ComputeP(T, time, S0, K, true);
-    double P2 = pricer.ComputeP(T, time, S0, K, false);
+    double P1 = pricer.P_i(T, time, S0, K, true);
+    double P2 = pricer.P_i(T, time, S0, K, false);
     std::cout << "P1 = " << P1 << ", P2 = " << P2 << std::endl;
 
     // Calcul du prix du call Heston

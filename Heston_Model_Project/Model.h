@@ -18,6 +18,7 @@ protected:
 class BlackScholesModel : public Model
 {
 public:
+	BlackScholesModel() = default;
 	BlackScholesModel(const double& drift, const double& volatility);
 	BlackScholesModel(const BlackScholesModel& model);
 	BlackScholesModel& operator=(const BlackScholesModel& model);
@@ -38,6 +39,7 @@ private:
 class HestonModel : public Model
 {
 public:
+	HestonModel() = default;
 
 	// Constructor with parameters
 	HestonModel(const double& kappa, const double& theta, const double& sigma, const double& rho, const double& v0, double r);
