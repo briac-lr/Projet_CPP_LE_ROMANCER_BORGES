@@ -1,6 +1,7 @@
 #include "CallPrice.h"
 #include <complex>
 #include <cmath>
+#include <iostream>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -37,11 +38,11 @@ std::complex<double> HestonPricer::CharacteristicFunction(
     std::complex<double> y_i;
 
     if (P1 == true) {
-        u_i = -1;
+        u_i = -1.0;
         y_i = j * omega - 1.0;
     }
     else {
-        u_i = 1;
+        u_i = 1.0;
         y_i = j * omega;
     }
 
@@ -49,11 +50,13 @@ std::complex<double> HestonPricer::CharacteristicFunction(
     std::complex<double> b = std::sqrt(a * a + _heston_model._sigma * _heston_model._sigma * (u_i * j * omega + omega * omega));
     std::complex<double> g = (a - b) / (a + b);
 
-    std::complex<double> num = _heston_model._r * j * omega * (T - time) + _heston_model._kappa * _heston_model._theta;
     std::complex<double> denom = (_heston_model._sigma * _heston_model._sigma) * ((a - b) * (T - time) - 2.0 * std::log((1.0 - g * std::exp(-b * (T - time))) / (1.0 - g)));
-    std::complex<double> C = num / denom;
+    std::complex<double> C = (j * omega * _heston_model._r * (T - time) +
+                             (_heston_model._kappa * _heston_model._theta) / (_heston_model._sigma * _heston_model._sigma) *
+                             ((a - b) * (T - time) - 2.0 * std::log((1.0 - g * std::exp(-b * (T - time))) / (1.0 - g)))
+                             );
 
-    std::complex<double> D = (a - b) / (_heston_model._sigma * _heston_model._sigma) * (1.0 - std::exp(b * (T - time)) / (1.0 - g * std::exp(b * (T - time))));
+    std::complex<double> D = (a - b) / (_heston_model._sigma * _heston_model._sigma) * (1.0 - std::exp(-b * (T - time))) / (1.0 - g * std::exp(-b * (T - time)));
 
     return std::exp(C + D * _heston_model._v0 + j * omega * x);
 }
@@ -90,7 +93,7 @@ double HestonPricer::RealIntegrand(double u, double T, double time, double S0, d
 }
 
 
-double HestonPricer::P_i(double T, double time, double S0, double K, bool P1) {
+double HestonPricer::Pi(double T, double time, double S0, double K, bool P1) {
 
     const int N = 64;
     gauss<double, N> integrator;
@@ -102,4 +105,16 @@ double HestonPricer::P_i(double T, double time, double S0, double K, bool P1) {
     double integral = integrator.integrate(integrand, -1.0, 1.0);
 
     return 0.5 + (1.0 / (2.0 * M_PI)) * integral;
+}
+
+double HestonPricer::CallHestonPrice(double T, double time, double S0, double K) {
+
+    double P1 = Pi(T, time, S0, K, true);
+    double P2 = Pi(T, time, S0, K, false);
+
+    //std::cout << "P1 = " << P1 << ", P2 = " << P2 << std::endl;
+
+    double call_price = S0 * P1 - K * std::exp(-_heston_model._r * T) * P2;
+
+    return call_price;
 }
