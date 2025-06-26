@@ -67,27 +67,63 @@ void Calibration::Calibrate() {
         << ", sigma = " << _sigma << std::endl;
 }
 
-// Simple CSV/space-separated parser
-//std::vector<std::vector<double>> Calibration::get_data(const char* path) {
-//    std::ifstream file(path);
-//    std::vector<std::vector<double>> data;
-//    std::string line;
-//
-//    while (std::getline(file, line)) {
-//        std::vector<double> row;
-//        std::stringstream ss(line);
-//        double val;
-//
-//        while (ss >> val) {
-//            row.push_back(val);
-//            if (ss.peek() == ',' || ss.peek() == ' ') ss.ignore();
-//        }
-//
-//        data.push_back(row);
-//    }
-//
-//    return data;
-//}
+template<typename T>
+struct HestonCalibrationFunctor : Eigen::DenseFunctor<T> {
+    const std::vector<std::vector<double>>& market_data; // [strike, maturity, market_vol]
+
+    HestonCalibrationFunctor(const std::vector<std::vector<double>>& data)
+        : Eigen::DenseFunctor<T>(5, data.size()), market_data(data) {}
+
+    // Model function
+    int operator()(const Eigen::VectorXd& x, Eigen::VectorXd& fvec) const {
+        double rho = x(0);
+        double kappa = x(1);
+        double theta = x(2);
+        double v0 = x(3);
+        double sigma = x(4);
+
+        for (size_t i = 0; i < market_data.size(); ++i) {
+            double K = market_data[i][0];     // strike
+            double T = market_data[i][1];     // maturity
+            double market_vol = market_data[i][2];
+
+            double model_vol = compute_model_volatility(K, T, rho, kappa, theta, v0, sigma); // implement this
+            fvec(i) = model_vol - market_vol;
+        }
+        return 0;
+    }
+};
+
+Eigen::NumericalDiff<HestonCalibrationFunctor<double>> numDiff(functor);
+Eigen::LevenbergMarquardt<Eigen::NumericalDiff<HestonCalibrationFunctor<double>>> lm(numDiff);
+
+void Calibration::Calibrate() {
+    std::vector<std::vector<double>> data = get_data(_market_data_path);
+
+    Eigen::VectorXd x(5);
+    for (int i = 0; i < 5; ++i)
+        x(i) = _initial_guess[i];
+
+    HestonCalibrationFunctor<double> functor(data);
+    Eigen::NumericalDiff<HestonCalibrationFunctor<double>> numDiff(functor);
+    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<HestonCalibrationFunctor<double>>> lm(numDiff);
+    lm.parameters.maxfev = _number_iterations;
+    lm.minimize(x);
+
+    _rho = x(0);
+    _kappa = x(1);
+    _theta = x(2);
+    _v0 = x(3);
+    _sigma = x(4);
+
+    std::cout << "Calibration done:\n";
+    std::cout << "rho = " << _rho
+        << ", kappa = " << _kappa
+        << ", theta = " << _theta
+        << ", v0 = " << _v0
+        << ", sigma = " << _sigma << std::endl;
+}
+
 
 // Getters
 double Calibration::getRho() const { return _rho; }
