@@ -17,6 +17,7 @@ add_executable(heston_model
     main.cpp
     Model.cpp
     CallPrice.cpp
+    Calibration.cpp
 )
 
 # Lien avec Boost (Eigen est header-only)
