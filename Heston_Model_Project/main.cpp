@@ -1,6 +1,7 @@
 #include <Eigen/Core>
 #include <iostream>
 #include "CallPrice.h"
+#include "CSVReader.h"
 
 int main() {
     // Heston model parameters
@@ -34,5 +35,26 @@ int main() {
     double impliedVol = call.compute_implied_vol();
     std::cout << "Implied Volatility: " << impliedVol << std::endl;
 
+
+    try {
+        csv::Reader reader("C:/Users/briac/OneDrive/ENPC3A/semestre1/C++/Projet_CPP_LE_ROMANCER_BORGES/Heston_Model_Project/volatility_surface.csv"); // CSV avec en-tête et virgules
+        std::vector<std::string> row;
+
+        // Affiche l’en-tête
+        for (const auto& colName : reader.header())
+            std::cout << colName << '\t';
+        std::cout << '\n' << std::string(40, '-') << '\n';
+
+        // Parcours ligne par ligne
+        while (reader.readRow(row)) {
+            for (const auto& cell : row)
+                std::cout << cell << '\t';
+            std::cout << '\n';
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Erreur : " << e.what() << '\n';
+        return 1;
+    }
     return 0;
 }

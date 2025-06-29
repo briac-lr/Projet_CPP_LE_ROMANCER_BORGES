@@ -1,5 +1,4 @@
-#ifndef CALIBRATION_H
-#define CALIBRATION_H
+#pragma once
 
 #include <vector>
 #include <string>
@@ -38,5 +37,3 @@ private:
     double _rho, _kappa, _theta, _v0, _sigma;
 
 };
-
-#endif // OPTIMISATION_HPP

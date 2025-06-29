@@ -4,9 +4,8 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/NumericalDiff>
-#include "CSVReader.h"
+// #include "CSVReader.h"
 #include "Model.h"
-
 
 
 // Parameterized constructor   
@@ -49,6 +48,41 @@ Calibration& Calibration::operator=(const Calibration& other) {
 Calibration::~Calibration() {
 }
 
+void Calibration::Calibrate() {
+    std::vector<std::vector<double>> data = get_data(_market_data_path);
+
+    Eigen::VectorXd x(5);
+    for (int i = 0; i < 5; ++i)
+        x(i) = _initial_guess[i];
+
+    HestonCalibrationFunctor functor(data);
+    Eigen::NumericalDiff<HestonCalibrationFunctor> numDiff(functor);
+    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<HestonCalibrationFunctor>> lm(numDiff);
+
+    lm.parameters.maxfev = _number_iterations;
+    lm.minimize(x);
+
+    _rho = x(0);
+    _kappa = x(1);
+    _theta = x(2);
+    _v0 = x(3);
+    _sigma = x(4);
+
+    std::cout << "Calibration done:\n";
+    std::cout << "rho = " << _rho
+        << ", kappa = " << _kappa
+        << ", theta = " << _theta
+        << ", v0 = " << _v0
+        << ", sigma = " << _sigma << std::endl;
+}
+
+// Getters
+double Calibration::getRho() const { return _rho; }
+double Calibration::getKappa() const { return _kappa; }
+double Calibration::getTheta() const { return _theta; }
+double Calibration::getV0() const { return _v0; }
+double Calibration::getSigma() const { return _sigma; }
+
 
 // Ce functor est utilisé avec Levenberg-Marquardt d’Eigen
 class HestonCalibrationFunctor : public Eigen::DenseFunctor<double> {
@@ -79,42 +113,3 @@ public:
         return 0;
     }
 };
-
-
-
-void Calibration::Calibrate() {
-    std::vector<std::vector<double>> data = get_data(_market_data_path);
-
-    Eigen::VectorXd x(5);
-    for (int i = 0; i < 5; ++i)
-        x(i) = _initial_guess[i];
-
-    HestonCalibrationFunctor functor(data);
-    Eigen::NumericalDiff<HestonCalibrationFunctor> numDiff(functor);
-    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<HestonCalibrationFunctor>> lm(numDiff);
-
-    lm.parameters.maxfev = _number_iterations;
-    lm.minimize(x);
-
-    _rho = x(0);
-    _kappa = x(1);
-    _theta = x(2);
-    _v0 = x(3);
-    _sigma = x(4);
-
-    std::cout << "Calibration done:\n";
-    std::cout << "rho = " << _rho
-        << ", kappa = " << _kappa
-        << ", theta = " << _theta
-        << ", v0 = " << _v0
-        << ", sigma = " << _sigma << std::endl;
-}
-
-
-
-// Getters
-double Calibration::getRho() const { return _rho; }
-double Calibration::getKappa() const { return _kappa; }
-double Calibration::getTheta() const { return _theta; }
-double Calibration::getV0() const { return _v0; }
-double Calibration::getSigma() const { return _sigma; }
