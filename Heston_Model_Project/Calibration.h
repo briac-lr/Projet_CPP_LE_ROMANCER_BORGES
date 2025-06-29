@@ -3,11 +3,13 @@
 
 #include <vector>
 #include <string>
+#include <array>
+
 
 class Calibration{
 public:
     // Parameterized constructor
-    Calibration(const std::array<double, 5>& initial_guess, int iterations, const char* market_data_path);
+    Calibration(const std::array<double, 5>& initial_guess, int iterations, const std::string& market_data_path);
 
     // Copy constructor
     Calibration(const Calibration& other);
@@ -31,11 +33,10 @@ public:
 private:
     std::array<double, 5> _initial_guess;
     int _number_iterations;
-    const char* _market_data_path;
+    std::string _market_data_path;
 
     double _rho, _kappa, _theta, _v0, _sigma;
 
-    //std::vector<std::vector<double>> get_data(const char* path);
 };
 
 #endif // OPTIMISATION_HPP

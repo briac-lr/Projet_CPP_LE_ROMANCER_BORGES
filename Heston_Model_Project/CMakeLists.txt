@@ -14,11 +14,12 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 
 # Fichiers source
 add_executable(heston_model
-    main.cpp
+    
     Model.cpp
     CallPrice.cpp
     Calibration.cpp
 )
 
 # Lien avec Boost (Eigen est header-only)
+target_include_directories(heston_model PRIVATE ${Boost_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
 target_link_libraries(heston_model PRIVATE ${Boost_LIBRARIES})
