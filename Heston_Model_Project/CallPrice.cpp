@@ -2,6 +2,7 @@
 #include <complex>
 #include <cmath>
 #include <iostream>
+#include <stdexcept>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -27,7 +28,6 @@ HestonPricer& HestonPricer::operator=(const HestonPricer& heston_pricer)
     }
     return *this;
 }
-
 
 // Characteristic function 
 std::complex<double> HestonPricer::CharacteristicFunction(
@@ -117,4 +117,43 @@ double HestonPricer::CallHestonPrice(double T, double time, double S0, double K)
     double call_price = S0 * P1 - K * std::exp(-_heston_model._r * T) * P2;
 
     return call_price;
+}
+
+double HestonPricer::ImpliedVolatility(double T, double time, double S0, double K, double CallPrice) {
+
+    return 0.0;
+}
+
+CallOption::CallOption(double S, double K, double T, double r, double marketPrice)
+    : S(S), K(K), T(T), r(r), marketPrice(marketPrice) {
+}
+
+double CallOption::norm_cdf(double x) const {
+    return 0.5 * std::erfc(-x * 1 / std::sqrt(2));
+}
+
+double CallOption::call_price(double sigma) const {
+    double d1 = (std::log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * std::sqrt(T));
+    double d2 = d1 - sigma * std::sqrt(T);
+    return S * norm_cdf(d1) - K * std::exp(-r * T) * norm_cdf(d2);
+}
+
+double CallOption::vega(double sigma) const {
+    double d1 = (std::log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * std::sqrt(T));
+    return S * std::sqrt(T) * std::exp(-0.5 * d1 * d1) / std::sqrt(2 * M_PI);
+}
+
+double CallOption::compute_implied_vol(double initialGuess, double tol, int maxIter) const {
+    double sigma = initialGuess;
+    for (int i = 0; i < maxIter; ++i) {
+        double price = call_price(sigma);
+        double diff = price - marketPrice;
+        if (std::fabs(diff) < tol)
+            return sigma;
+        double v = vega(sigma);
+        if (v == 0.0)
+            throw std::runtime_error("Vega is zero. Division by zero in Newton-Raphson.");
+        sigma -= diff / v;
+    }
+    throw std::runtime_error("Volatility not found within iteration limit.");
 }
