@@ -18,8 +18,8 @@ add_executable(heston_model
     Model.cpp
     CallPrice.cpp
     CSVReader.cpp
+    Calibration.cpp
 )
-#    Calibration.cpp
 
 # Link with Boost and QuantLib (Eigen is header-only)
 target_link_libraries(heston_model PRIVATE

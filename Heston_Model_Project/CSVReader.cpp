@@ -1,61 +1,46 @@
 #include "CSVReader.h"
-
+#include <fstream>
+#include <sstream>
 #include <stdexcept>
 
-namespace csv {
+CSVReader::CSVReader(const std::string& path,
+    bool has_header,
+    char delimiter)
+    : _path(path), _has_header(has_header), _delimiter(delimiter) {
+}
 
-    Reader::Reader(const std::string& path, char sep)
-        : sep_{ sep }, file_{ path }
-    {
-        if (!file_.is_open())
-            throw std::runtime_error("Impossible d’ouvrir le fichier : " + path);
+std::vector<std::vector<double>> CSVReader::read() const
+{
+    std::ifstream file(_path);
+    if (!file.is_open())
+        throw std::runtime_error("CSVReader: cannot open \"" + _path + "\"");
 
-        std::string line;
-        if (!std::getline(file_, line))
-            throw std::runtime_error("Fichier CSV vide : " + path);
+    std::string line;
+    std::vector<std::vector<double>> data;
 
-        if (!parseLine(line, header_))
-            throw std::runtime_error("Erreur de parsing de l’en-tête : " + path);
-    }
+    // Optional header
+    if (_has_header && std::getline(file, line)) { /* ignore header */ }
 
-    bool Reader::readRow(std::vector<std::string>& out)
-    {
-        std::string line;
-        if (!std::getline(file_, line))
-            return false;                      // EOF ou erreur flux
+    while (std::getline(file, line)) {
+        if (line.empty()) continue;        // allow blank lines
 
-        return parseLine(line, out);
-    }
+        std::vector<double> row;
+        std::stringstream   ss(line);
+        std::string         cell;
 
-    bool Reader::parseLine(const std::string& line, std::vector<std::string>& out) const
-    {
-        out.clear();
-        std::string field;
-        bool inQuotes = false;
-
-        for (std::size_t i = 0; i < line.size(); ++i) {
-            char c = line[i];
-
-            if (c == '"') {
-                // Deux guillemets consécutifs -> caractère " littéral
-                if (inQuotes && i + 1 < line.size() && line[i + 1] == '"') {
-                    field += '"';
-                    ++i;                       // consomme le second "
-                }
-                else {
-                    inQuotes = !inQuotes;
-                }
+        while (std::getline(ss, cell, _delimiter)) {
+            try {
+                row.emplace_back(std::stod(cell));
             }
-            else if (c == sep_ && !inQuotes) {
-                out.push_back(field);
-                field.clear();
-            }
-            else {
-                field += c;
+            catch (const std::invalid_argument&) {
+                throw std::runtime_error("CSVReader: non-numeric field in \"" + _path + "\" -> \"" + cell + "\"");
             }
         }
-        out.push_back(field);                  // dernier champ
-        return true;
-    }
+        if (row.size() != 4)
+            throw std::runtime_error("CSVReader: expected 4 columns, got " +
+                std::to_string(row.size()) + " in line \"" + line + '"');
 
-} // namespace csv
+        data.emplace_back(std::move(row));
+    }
+    return data;
+}

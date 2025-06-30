@@ -1,4 +1,4 @@
-#include "CallPrice.h"
+﻿#include "CallPrice.h"
 #include <complex>
 #include <cmath>
 #include <iostream>
@@ -64,7 +64,7 @@ std::complex<double> HestonPricer::CharacteristicFunction(
 
 double HestonPricer::RealIntegrand(double u, double T, double time, double S0, double K, bool P1) {
     if (u == 0.0) {
-        return 0.0; // �vite la division par z�ro
+        return 0.0; // Évite la division par zéro
     }
 
     std::complex<double> j(0.0, 1.0);
@@ -143,17 +143,49 @@ double CallOption::vega(double sigma) const {
     return S * std::sqrt(T) * std::exp(-0.5 * d1 * d1) / std::sqrt(2 * M_PI);
 }
 
-double CallOption::compute_implied_vol(double initialGuess, double tol, int maxIter) const {
+double CallOption::compute_implied_vol(double initialGuess,
+    double tol,
+    int    maxIter) const
+{
+    const double VEGA_EPS = 1e-8;          // deem vega ≈ 0 below this
+    const double SIG_LOW = 1e-4;          // lower bound for σ in fallback
+    const double SIG_HIGH = 5.0;           // upper bound for σ in fallback
+
+    /* ---------- Newton–Raphson first ---------- */
     double sigma = initialGuess;
-    for (int i = 0; i < maxIter; ++i) {
+
+    for (int i = 0; i < maxIter; ++i)
+    {
         double price = call_price(sigma);
         double diff = price - marketPrice;
         if (std::fabs(diff) < tol)
             return sigma;
+
         double v = vega(sigma);
-        if (v == 0.0)
-            throw std::runtime_error("Vega is zero. Division by zero in Newton-Raphson.");
-        sigma -= diff / v;
+        if (std::fabs(v) < VEGA_EPS)       // almost flat
+            break;                         // jump to fallback
+
+        sigma -= diff / v;                 // Newton step
+        if (sigma <= 0.0)                  // keep σ > 0
+            sigma = SIG_LOW;
     }
-    throw std::runtime_error("Volatility not found within iteration limit.");
+
+    /* ---------- Robust fallback: bisection ---------- */
+    double low = SIG_LOW;
+    double high = SIG_HIGH;
+    for (int i = 0; i < 100; ++i)          // 100 bisection steps = 2^-100
+    {
+        sigma = 0.5 * (low + high);
+        double diff = call_price(sigma) - marketPrice;
+
+        if (std::fabs(diff) < tol)
+            return sigma;
+
+        if (diff > 0.0)
+            high = sigma;                  // price too high → σ too big
+        else
+            low = sigma;                  // price too low  → σ too small
+    }
+
+    throw std::runtime_error("Implied vol not found (Newton + bisection failed)");
 }

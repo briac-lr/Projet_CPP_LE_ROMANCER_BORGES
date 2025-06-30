@@ -1,19 +1,28 @@
-#include "Calibration.h"
 #include "iostream"
 #include <cstring>
+#include <vector>
+
 #include <Eigen/Dense>
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/NumericalDiff>
-// #include "CSVReader.h"
+
+#include "CSVReader.h"
 #include "Model.h"
+#include "Calibration.h"
+#include "CallPrice.h"
 
 
-// Parameterized constructor   
-Calibration::Calibration(const std::array<double, 5>& initial_guess, int iterations, const std::string& market_data_path)
-    : _initial_guess(initial_guess), _number_iterations(iterations), _market_data_path(market_data_path),
+// Parameterized constructor
+Calibration::Calibration(const std::array<double, 5>& initial_guess,
+    int iterations,
+    const std::string& market_data_path)
+    : _initial_guess(initial_guess),
+    _number_iterations(iterations),
+    _market_data_path(market_data_path),
     _rho(0), _kappa(0), _theta(0), _v0(0), _sigma(0)
 {
-
+    CSVReader reader(_market_data_path);
+    _market_data = reader.read();   // may throw if file is bad
 }
 
 // Copy constructor
@@ -25,7 +34,6 @@ Calibration::Calibration(const Calibration& other)
 {
 
 }
-
 
 // Copy assignment operator
 Calibration& Calibration::operator=(const Calibration& other) {
@@ -45,19 +53,20 @@ Calibration& Calibration::operator=(const Calibration& other) {
 }
 
 // Destructor
-Calibration::~Calibration() {
+Calibration::~Calibration() 
+{
+
 }
 
-void Calibration::Calibrate() {
-    std::vector<std::vector<double>> data = get_data(_market_data_path);
-
+void Calibration::Calibrate()
+{
     Eigen::VectorXd x(5);
-    for (int i = 0; i < 5; ++i)
-        x(i) = _initial_guess[i];
+    for (int i = 0; i < 5; ++i) x(i) = _initial_guess[i];
 
-    HestonCalibrationFunctor functor(data);
+    HestonCalibrationFunctor functor(_market_data);
     Eigen::NumericalDiff<HestonCalibrationFunctor> numDiff(functor);
-    Eigen::LevenbergMarquardt<Eigen::NumericalDiff<HestonCalibrationFunctor>> lm(numDiff);
+    Eigen::LevenbergMarquardt<
+        Eigen::NumericalDiff<HestonCalibrationFunctor>, double> lm(numDiff);
 
     lm.parameters.maxfev = _number_iterations;
     lm.minimize(x);
@@ -68,12 +77,6 @@ void Calibration::Calibrate() {
     _v0 = x(3);
     _sigma = x(4);
 
-    std::cout << "Calibration done:\n";
-    std::cout << "rho = " << _rho
-        << ", kappa = " << _kappa
-        << ", theta = " << _theta
-        << ", v0 = " << _v0
-        << ", sigma = " << _sigma << std::endl;
 }
 
 // Getters
@@ -84,32 +87,61 @@ double Calibration::getV0() const { return _v0; }
 double Calibration::getSigma() const { return _sigma; }
 
 
-// Ce functor est utilisé avec Levenberg-Marquardt d’Eigen
-class HestonCalibrationFunctor : public Eigen::DenseFunctor<double> {
-    const std::vector<std::vector<double>>& market_data;
+HestonCalibrationFunctor::HestonCalibrationFunctor(
+    const std::vector<std::vector<double>>& market_data)
+    : _data(market_data) 
+{
 
-public:
-    // Constructeur : 5 paramètres à calibrer, N points de données
-    HestonCalibrationFunctor(const std::vector<std::vector<double>>& data)
-        : Eigen::DenseFunctor<double>(5, static_cast<int>(data.size())), market_data(data) {}
+}
 
-    int operator()(const Eigen::VectorXd& x, Eigen::VectorXd& fvec) const override {
-        double rho = x(0);
-        double kappa = x(1);
-        double theta = x(2);
-        double v0 = x(3);
-        double sigma = x(4);
+int HestonCalibrationFunctor::operator()(const Eigen::VectorXd& x,
+    Eigen::VectorXd& fvec) const
+{
+    const double rho = x(0);
+    const double kappa = x(1);
+    const double theta = x(2);
+    const double v0 = x(3);
+    const double sigma = x(4);
 
-        for (int i = 0; i < this->values(); ++i) {
-            double K = market_data[i][0]; // Strike
-            double T = market_data[i][1]; // Maturité
-            double market_vol = market_data[i][2]; // Vol observée
+    const double r = 0.01;
+    const double time = 0.0;
+    const double S0 = 498.63;
 
-            //  Cette fonction doit être définie ailleurs (ton modèle Heston)
-            double model_vol = compute_model_volatility(K, T, rho, kappa, theta, v0, sigma);
+    for (int i = 0; i < values(); ++i) {
+        std::cout << i << std::endl;
+        const double market_vol = _data[i][1];  // observed vol
+        const double K = _data[i][2];   // strike
+        const double T = _data[i][3];   // maturity
 
-            fvec(i) = model_vol - market_vol;
+        HestonModel model(kappa, theta, sigma, rho, v0, r);
+
+        // Heston pricer using constructor with parameters
+        HestonPricer pricer(model);
+
+        // Compute Heston Call price
+        double call_price = pricer.CallHestonPrice(T, time, S0, K);
+
+        // Call price using constructor with parameters
+        CallOption call(S0, K, T, r, call_price);
+
+        // Compute implied volatility of the call price
+
+        try
+        {
+            double HestonImpliedVol = call.compute_implied_vol();
+            fvec(i) = HestonImpliedVol - market_vol;      // résidu normal
         }
-        return 0;
+        catch (const std::exception& ex)
+        {
+            std::cerr << "SKIP: " << ex.what()
+                << "  (K=" << K << ", T=" << T << ")\n";
+
+            /* Résidu neutre : n’influence pas la somme des carrés */
+            fvec(i) = 20.0;
+            continue;                       // passe au point suivant
+        }
+
     }
-};
+    return 0;   // success
+}
+
