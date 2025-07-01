@@ -103,7 +103,7 @@ int HestonCalibrationFunctor::operator()(const Eigen::VectorXd& x,
     const double v0 = x(3);
     const double sigma = x(4);
 
-    const double r = 0.01;
+    const double r = 0.0423;
     const double time = 0.0;
     const double S0 = 498.63;
 
@@ -137,7 +137,7 @@ int HestonCalibrationFunctor::operator()(const Eigen::VectorXd& x,
                 << "  (K=" << K << ", T=" << T << ")\n";
 
             /* Résidu neutre : n’influence pas la somme des carrés */
-            fvec(i) = 20.0;
+            fvec(i) = 0.0;
             continue;                       // passe au point suivant
         }
 

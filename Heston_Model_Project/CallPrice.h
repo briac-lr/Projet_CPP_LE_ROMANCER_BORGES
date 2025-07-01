@@ -28,7 +28,7 @@ public:
 
     double call_price(double sigma) const;
     double vega(double sigma) const;
-    double compute_implied_vol(double initialGuess = 0.2, double tol = 1e-6, int maxIter = 1000) const;
+    double compute_implied_vol(double initialGuess = 0.19, double tol = 1e-6, int maxIter = 100) const;
 
 private:
     double norm_cdf(double x) const;
