@@ -4,6 +4,7 @@ project(HestonModelProject)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
 
+# We used two libraries in our project: Boost and Eigen
 # Search Boost and Eigen using vcpkg
 find_package(Boost REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -22,6 +23,4 @@ add_executable(heston_model
 )
 
 # Link with Boost and QuantLib (Eigen is header-only)
-target_link_libraries(heston_model PRIVATE
-    ${Boost_LIBRARIES}
-)
+target_link_libraries(heston_model PRIVATE ${Boost_LIBRARIES})

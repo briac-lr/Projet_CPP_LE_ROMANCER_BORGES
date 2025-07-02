@@ -1,3 +1,8 @@
+#include "CSVReader.h"
+#include "Model.h"
+#include "Calibration.h"
+#include "CallPrice.h"
+
 #include "iostream"
 #include <cstring>
 #include <vector>
@@ -5,11 +10,6 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/NumericalDiff>
-
-#include "CSVReader.h"
-#include "Model.h"
-#include "Calibration.h"
-#include "CallPrice.h"
 
 
 // Parameterized constructor
