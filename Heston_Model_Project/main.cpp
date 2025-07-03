@@ -11,14 +11,14 @@
 
 int main() {
     // Heston model parameters
-    const double kappa = 3.0;
+    const double kappa = 2.0;
     const double theta = 0.04;
-    const double sigma = 0.5;
-    const double rho = -0.7;
-    const double v0 = 0.04;
+    const double sigma = 0.4;
+    const double rho = -0.2;
+    const double v0 = 0.03;
 
     // Call parameters
-    const double S0 = 498.63;
+    const double S0 = 212.44;
     const double time = 0.0;
     const double r = 0.0423;
 
@@ -33,7 +33,7 @@ int main() {
     const int max_iterations = 100;
 
     // Calibrate
-    Calibration calibrator(initial_guess, max_iterations, market_data_path);
+    Calibration calibrator(initial_guess, max_iterations, market_data_path, r, S0, time);
     calibrator.Calibrate();
 
     std::cout << "\n=== Calibrated Heston parameters ===\n"

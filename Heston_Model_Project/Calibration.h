@@ -8,8 +8,17 @@
 
 class Calibration{
 public:
-    // Parameterized constructor
-    Calibration(const std::array<double, 5>& initial_guess, int iterations, const std::string& market_data_path);
+    // Default Constructor
+    Calibration() = default;
+
+    // Constructor with parameters
+    Calibration(
+        const std::array<double, 5>& initial_guess, 
+        int iterations, 
+        const std::string& market_data_path,
+        const double r,
+        const double S0,
+        const double time);
 
     // Copy constructor
     Calibration(const Calibration& other);
@@ -23,7 +32,7 @@ public:
     // Public method to run the calibration
     void Calibrate();
 
-    // Accessors for calibrated parameters
+    // Get calibrated parameters
     double getRho() const;
     double getKappa() const;
     double getTheta() const;
@@ -31,51 +40,56 @@ public:
     double getSigma() const;
 
 private:
+    // Initial values for rho, kappa, theta, v0, sigma
     std::array<double, 5> _initial_guess;
+    // Number of iterations
     int _number_iterations;
-    std::string _market_data_path; // absolute path
+    // Data file path
+    std::string _market_data_path;
+    // Data
     std::vector<std::vector<double>> _market_data;
-    double _rho, _kappa, _theta, _v0, _sigma;
+    // Heston Parameters
+    double _rho, _kappa, _theta, _v0, _sigma, _r, _S0, _time;
 
 };
 
-// Ce functor est utilisé avec Levenberg-Marquardt d’Eigen
-/**
- *  Functor used by Eigen's Levenberg-Marquardt solver to calibrate the
- *  5-parameter Heston model against market volatilities.
- *
- *  It does **not** inherit from Eigen::DenseFunctor; instead we expose the
- *  minimal static/virtual interface expected by Eigen's LM implementation.
- */
+// This functor is used with Eigen's Levenberg-Marquardt solver to calibrate 
+// the 5 - parameter Heston model against market volatilities.
 class HestonCalibrationFunctor
 {
 public:
-    /* =====   Traits required by LevenbergMarquardt   ===== */
+    // Constructor with parameters
+    explicit HestonCalibrationFunctor(const std::vector<std::vector<double>>& market_data, 
+        const double r, 
+        const double S0, 
+        const double time);
+
+    // Heston parameters
+    using InputType = Eigen::VectorXd;
+    // Input data
+    using ValueType = Eigen::VectorXd;
+    // Requeried by NumericalDiff
     using Scalar = double;
-    using InputType = Eigen::VectorXd;       // length 5
-    using ValueType = Eigen::VectorXd;       // length = #data lines
     using JacobianType = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
+    // enum in C++ defines named constant values
     enum {
-        InputsAtCompileTime = 5,        // rho, kappa, theta, v0, sigma
+        // rho, kappa, theta, v0, sigma
+        InputsAtCompileTime = 5,
         ValuesAtCompileTime = Eigen::Dynamic
     };
 
-    /* =====   Ctor & interface expected by NumericalDiff   ===== */
-    explicit HestonCalibrationFunctor(const std::vector<std::vector<double>>& market_data);
-
-    /**
-     *  Compute residuals:  model_vol(K,T) – market_vol
-     *  @param x     5-vector of Heston parameters
-     *  @param fvec  residuals, sized  = values()
-     *  @return      0 on success   (Eigen convention)
-     */
+    // Compute residuals
     int operator()(const Eigen::VectorXd& x, Eigen::VectorXd& fvec) const;
 
-    /* These two are queried by NumericalDiff / LM */
+    // Requeried by NumericalDiff
     int inputs()  const { return InputsAtCompileTime; }
     int values()  const { return static_cast<int>(_data.size()); }
 
 private:
-    const std::vector<std::vector<double>>& _data;   // strike, maturity, vol
+    // strike, maturity, vol
+    const std::vector<std::vector<double>>& _data;
+    const double _r;
+    const double _S0;
+    const double _time;
 };
