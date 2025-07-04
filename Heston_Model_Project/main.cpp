@@ -13,20 +13,19 @@ int main() {
     // Heston model parameters
     const double kappa = 2.0;
     const double theta = 0.04;
-    const double sigma = 0.4;
-    const double rho = -0.2;
+    const double sigma = 0.5;
+    const double rho = -0.4;
     const double v0 = 0.03;
 
     // Call parameters
-    const double S0 = 212.44;
+    const double S0 = 212.44; // Spot price at the close of the Apple stock 02/07/2025
     const double time = 0.0;
-    const double r = 0.0423;
+    const double r = 0.0423; // US tresory bond rate
 
     // Data file path
-    const std::string market_data_path = "C:/Users/briac/OneDrive/ENPC3A/semestre1/C++/Projet_CPP_LE_ROMANCER_BORGES/Heston_Model_Project/volatility_surface.csv";
+    const std::string market_data_path = "volatility_surface.csv";
 
     // Initial values for rho, kappa, theta, v0, sigma
-    //  -0.8, 4.0, 0.04, 0.04, 0.50 
     std::array<double, 5> initial_guess = {rho, kappa, theta, v0, sigma};
 
     // Number of iterations
